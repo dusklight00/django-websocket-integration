@@ -50,7 +50,7 @@ const ChatComponent = () => {
 
   const connectWebSocket = () => {
     // Replace with your Django WebSocket URL
-    const wsUrl = `ws://${window.location.hostname}:8000/ws/chat/`;
+    const wsUrl = `ws://${window.location.hostname}:8001/ws/chat/`;
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
@@ -69,7 +69,7 @@ const ChatComponent = () => {
       // Try to reconnect after a delay
       setTimeout(() => {
         connectWebSocket();
-      }, 3000);
+      }, 40000);
     };
 
     socket.onerror = (err) => {
