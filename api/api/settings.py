@@ -25,7 +25,13 @@ SECRET_KEY = 'django-insecure-zq!0+ke!3!h8-&6*ap$ui5p$slzb-e=l3r9=dg55b-v)vx_-*2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
+# SSL/HTTPS settings
+SECURE_SSL_REDIRECT = False  # Set to True in production
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # For reverse proxy setups
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 
 # Application definition
@@ -61,7 +67,7 @@ ROOT_URLCONF = 'api.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -81,6 +87,13 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
+}
+
+# Certificates for secure WebSockets
+import os
+WSS_CERTIFICATES = {
+    'CERT_FILE': os.path.join(BASE_DIR, 'ssl', 'cert.pem'),
+    'KEY_FILE': os.path.join(BASE_DIR, 'ssl', 'key.pem'),
 }
 
 

@@ -30,9 +30,7 @@ const ChatComponent = () => {
   // Scroll to bottom of messages when messages update
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
-
-  const checkServerStatus = async () => {
+  }, [messages]);  const checkServerStatus = async () => {
     try {
       const response = await axios.get(
         `http://${window.location.hostname}:8000/chat/status/`
@@ -46,11 +44,9 @@ const ChatComponent = () => {
       console.error("Error checking server status:", error);
       setServerStatus("offline");
     }
-  };
-
-  const connectWebSocket = () => {
-    // Replace with your Django WebSocket URL
-    const wsUrl = `ws://${window.location.hostname}:8001/ws/chat/`;
+  };  const connectWebSocket = () => {
+    // Using secure WebSocket URL with wss protocol but with the ws path (handled by Django Channels)
+    const wsUrl = `wss://${window.location.hostname}:8001/ws/chat/`;
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSL Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #555;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>SSL Certificate Test Page</h1>
+    
+    <div class="success">
+        <strong>Success!</strong> If you can see this page, SSL is working correctly and your browser has accepted the certificate.
+    </div>
+    
+    <div class="card">
+        <h2>What This Means</h2>
+        <p>This page is being served securely over HTTPS. The secure connection is now established, which means:</p>
+        <ul>
+            <li>Your browser has accepted the self-signed certificate</li>
+            <li>The Django server with SSL is running correctly</li>
+            <li>WebSocket connections using WSS should now work</li>
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h2>Next Steps</h2>
+        <p>You can now proceed to test the secure WebSocket connection:</p>
+        <p><a href="/chat/test/" class="button">Test WebSocket Connection</a></p>
+        <p>This test page will help verify that your frontend can establish a secure WebSocket connection.</p>
+    </div>
+    
+    <div class="card">
+        <h2>Connection Information</h2>
+        <p>Your WebSocket connection URL should be:</p>
+        <p><code>wss://localhost:8001/ws/chat/</code></p>
+        
+        <p>For frontend applications, use this format:</p>
+        <pre><code>const socket = new WebSocket(`wss://${window.location.hostname}:8001/ws/chat/`);</code></pre>
+    </div>
+    
+    <script>
+        console.log("SSL test page loaded successfully");
+    </script>
+</body>
+</html>
