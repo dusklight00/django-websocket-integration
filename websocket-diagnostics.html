@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Connection Diagnostics</title>
+    <script src="websocket-diagnostics-ui.js"></script>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        color: #2563eb;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 10px;
+      }
+      .card {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      .card-header {
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+      button:hover {
+        background-color: #1d4ed8;
+      }
+      button:disabled {
+        background-color: #93c5fd;
+        cursor: not-allowed;
+      }
+      .status {
+        margin-top: 20px;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .status.success {
+        background-color: #d1fae5;
+        color: #065f46;
+      }
+      .status.error {
+        background-color: #fee2e2;
+        color: #b91c1c;
+      }
+      .status.warning {
+        background-color: #fef3c7;
+        color: #92400e;
+      }
+      .result-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      .result-table th,
+      .result-table td {
+        border: 1px solid #e5e7eb;
+        padding: 8px;
+        text-align: left;
+      }
+      .result-table th {
+        background-color: #f3f4f6;
+      }
+      .test-result {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+      }
+      .test-result .indicator {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 10px;
+        flex-shrink: 0;
+      }
+      .test-result .indicator.success {
+        background-color: #10b981;
+      }
+      .test-result .indicator.error {
+        background-color: #ef4444;
+      }
+      .test-result .indicator.warning {
+        background-color: #f59e0b;
+      }
+      .test-result .indicator.info {
+        background-color: #3b82f6;
+      }
+      pre {
+        background-color: #f3f4f6;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-size: 0.85rem;
+      }
+      summary {
+        cursor: pointer;
+        color: #2563eb;
+        font-weight: 500;
+      }
+
+      /* Tailwind-like utility classes */
+      .bg-green-50 {
+        background-color: #f0fdf4;
+      }
+      .bg-green-100 {
+        background-color: #dcfce7;
+      }
+      .bg-green-500 {
+        background-color: #22c55e;
+      }
+      .text-green-500 {
+        color: #22c55e;
+      }
+      .text-green-600 {
+        color: #16a34a;
+      }
+      .text-green-700 {
+        color: #15803d;
+      }
+      .text-green-800 {
+        color: #166534;
+      }
+      .border-green-200 {
+        border-color: #bbf7d0;
+      }
+      .border-green-500 {
+        border-color: #22c55e;
+      }
+
+      .bg-red-50 {
+        background-color: #fef2f2;
+      }
+      .bg-red-100 {
+        background-color: #fee2e2;
+      }
+      .bg-red-500 {
+        background-color: #ef4444;
+      }
+      .text-red-500 {
+        color: #ef4444;
+      }
+      .text-red-600 {
+        color: #dc2626;
+      }
+      .text-red-700 {
+        color: #b91c1c;
+      }
+      .text-red-800 {
+        color: #991b1b;
+      }
+      .border-red-200 {
+        border-color: #fecaca;
+      }
+      .border-red-500 {
+        border-color: #ef4444;
+      }
+
+      .bg-yellow-50 {
+        background-color: #fefce8;
+      }
+      .bg-yellow-100 {
+        background-color: #fef9c3;
+      }
+      .bg-yellow-500 {
+        background-color: #eab308;
+      }
+      .text-yellow-500 {
+        color: #eab308;
+      }
+      .text-yellow-600 {
+        color: #ca8a04;
+      }
+      .text-yellow-700 {
+        color: #a16207;
+      }
+      .text-yellow-800 {
+        color: #854d0e;
+      }
+      .border-yellow-200 {
+        border-color: #fef08a;
+      }
+      .border-yellow-500 {
+        border-color: #eab308;
+      }
+
+      .bg-blue-50 {
+        background-color: #eff6ff;
+      }
+      .bg-blue-100 {
+        background-color: #dbeafe;
+      }
+      .bg-blue-500 {
+        background-color: #3b82f6;
+      }
+      .text-blue-500 {
+        color: #3b82f6;
+      }
+      .text-blue-600 {
+        color: #2563eb;
+      }
+      .text-blue-700 {
+        color: #1d4ed8;
+      }
+      .text-blue-800 {
+        color: #1e40af;
+      }
+      .border-blue-200 {
+        border-color: #bfdbfe;
+      }
+      .border-blue-500 {
+        border-color: #3b82f6;
+      }
+
+      .bg-gray-50 {
+        background-color: #f9fafb;
+      }
+      .bg-gray-100 {
+        background-color: #f3f4f6;
+      }
+      .bg-gray-200 {
+        background-color: #e5e7eb;
+      }
+      .bg-gray-300 {
+        background-color: #d1d5db;
+      }
+      .bg-gray-400 {
+        background-color: #9ca3af;
+      }
+      .bg-gray-500 {
+        background-color: #6b7280;
+      }
+      .text-gray-500 {
+        color: #6b7280;
+      }
+      .text-gray-600 {
+        color: #4b5563;
+      }
+      .text-gray-700 {
+        color: #374151;
+      }
+      .text-gray-800 {
+        color: #1f2937;
+      }
+
+      .font-semibold {
+        font-weight: 600;
+      }
+      .font-bold {
+        font-weight: 700;
+      }
+      .font-medium {
+        font-weight: 500;
+      }
+
+      .rounded {
+        border-radius: 0.25rem;
+      }
+      .rounded-full {
+        border-radius: 9999px;
+      }
+
+      .p-1 {
+        padding: 0.25rem;
+      }
+      .p-2 {
+        padding: 0.5rem;
+      }
+      .p-3 {
+        padding: 0.75rem;
+      }
+      .pt-2 {
+        padding-top: 0.5rem;
+      }
+
+      .m-1 {
+        margin: 0.25rem;
+      }
+      .m-2 {
+        margin: 0.5rem;
+      }
+      .mt-1 {
+        margin-top: 0.25rem;
+      }
+      .mt-2 {
+        margin-top: 0.5rem;
+      }
+      .mt-3 {
+        margin-top: 0.75rem;
+      }
+      .mt-5 {
+        margin-top: 1.25rem;
+      }
+      .mb-1 {
+        margin-bottom: 0.25rem;
+      }
+      .mb-2 {
+        margin-bottom: 0.5rem;
+      }
+      .mb-3 {
+        margin-bottom: 0.75rem;
+      }
+      .ml-2 {
+        margin-left: 0.5rem;
+      }
+
+      .border {
+        border-width: 1px;
+      }
+      .border-t {
+        border-top-width: 1px;
+      }
+      .border-l-4 {
+        border-left-width: 4px;
+      }
+
+      .text-xs {
+        font-size: 0.75rem;
+      }
+      .text-sm {
+        font-size: 0.875rem;
+      }
+
+      .flex {
+        display: flex;
+      }
+      .flex-shrink-0 {
+        flex-shrink: 0;
+      }
+      .flex-grow {
+        flex-grow: 1;
+      }
+      .items-start {
+        align-items: flex-start;
+      }
+      .items-center {
+        align-items: center;
+      }
+      .justify-between {
+        justify-content: space-between;
+      }
+
+      .relative {
+        position: relative;
+      }
+      .absolute {
+        position: absolute;
+      }
+      .hidden {
+        display: none;
+      }
+
+      .w-2 {
+        width: 0.5rem;
+      }
+      .w-5 {
+        width: 1.25rem;
+      }
+      .h-2 {
+        height: 0.5rem;
+      }
+      .h-5 {
+        height: 1.25rem;
+      }
+      .w-full {
+        width: 100%;
+      }
+
+      .overflow-x-auto {
+        overflow-x: auto;
+      }
+      .overflow-y-auto {
+        overflow-y: auto;
+      }
+      .truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .cursor-pointer {
+        cursor: pointer;
+      }
+
+      .list-disc {
+        list-style-type: disc;
+      }
+      .list-inside {
+        list-style-position: inside;
+      }
+
+      .grid {
+        display: grid;
+      }
+      .grid-cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .gap-2 {
+        gap: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WebSocket Connection Diagnostics</h1>
+
+    <div class="card">
+      <div class="card-header">Connection Settings</div>
+      <div class="form-group">
+        <label for="hostInput">Host:</label>
+        <input type="text" id="hostInput" value="localhost" />
+      </div>
+      <div class="form-group">
+        <label for="wsPortInput">WebSocket Port:</label>
+        <input type="text" id="wsPortInput" value="8001" />
+      </div>
+      <div class="form-group">
+        <label for="apiPortInput">API Port:</label>
+        <input type="text" id="apiPortInput" value="8000" />
+      </div>
+      <div class="form-group">
+        <label for="pathInput">WebSocket Path:</label>
+        <input type="text" id="pathInput" value="/ws/chat/" />
+      </div>
+      <div class="form-group">
+        <label for="protocolSelect">Protocol:</label>
+        <select id="protocolSelect">
+          <option value="ws">ws:// (insecure)</option>
+          <option value="wss">wss:// (secure)</option>
+        </select>
+      </div>
+      <button id="runDiagnosticsBtn">Run Diagnostics</button>
+    </div>
+
+    <div id="browserInfoCard" class="card" style="display: none">
+      <div class="card-header">Browser Environment</div>
+      <div id="browserInfo"></div>
+    </div>
+
+    <div id="diagnosticResultsCard" class="card" style="display: none">
+      <div class="card-header">Diagnostic Results</div>
+      <div id="diagnosticSummary" class="status"></div>
+      <div id="diagnosticResults"></div>
+    </div>
+
+    <div id="testResultsCard" class="card" style="display: none">
+      <div class="card-header">Test Results</div>
+      <div id="testResults"></div>
+      <details id="rawResultsDetails">
+        <summary>Show Raw Test Results</summary>
+        <pre id="rawResults"></pre>
+      </details>
+    </div>
+
+    <!-- Network Trace Visualization -->
+    <div id="networkTraceVisualization" class="mt-5 hidden"></div>
+
+    <!-- Security Analysis -->
+    <div id="securityAnalysis" class="mt-5 hidden"></div>
+
+    <!-- Results -->
+    <div class="card mt-5 hidden" id="resultsCard"></div>
+
+    <script>
+      // Elements
+      const hostInput = document.getElementById("hostInput");
+      const wsPortInput = document.getElementById("wsPortInput");
+      const apiPortInput = document.getElementById("apiPortInput");
+      const pathInput = document.getElementById("pathInput");
+      const protocolSelect = document.getElementById("protocolSelect");
+      const runDiagnosticsBtn = document.getElementById("runDiagnosticsBtn");
+
+      const browserInfoCard = document.getElementById("browserInfoCard");
+      const browserInfo = document.getElementById("browserInfo");
+
+      const diagnosticResultsCard = document.getElementById(
+        "diagnosticResultsCard"
+      );
+      const diagnosticSummary = document.getElementById("diagnosticSummary");
+      const diagnosticResults = document.getElementById("diagnosticResults");
+
+      const testResultsCard = document.getElementById("testResultsCard");
+      const testResults = document.getElementById("testResults");
+      const rawResults = document.getElementById("rawResults");
+
+      // Global variables for visualizers
+      let networkTraceVisualizer = null;
+      let securityAnalyzer = null;
+
+      // Toggle trace step expansion
+      function toggleTraceStep(stepId) {
+        if (networkTraceVisualizer) {
+          networkTraceVisualizer.toggleStep(stepId);
+          document
+            .getElementById(`trace-step-details-${stepId}`)
+            .classList.toggle("hidden");
+          const arrowButton = document.querySelector(
+            `#trace-step-${stepId} button`
+          );
+          if (arrowButton) {
+            arrowButton.textContent = document
+              .getElementById(`trace-step-details-${stepId}`)
+              .classList.contains("hidden")
+              ? "▶"
+              : "▼";
+          }
+        }
+      }
+
+      // Toggle security details
+      function toggleSecurityDetails() {
+        if (securityAnalyzer) {
+          securityAnalyzer.toggleAdvanced();
+          document.getElementById("securityAnalysis").innerHTML =
+            securityAnalyzer.render();
+        }
+      }
+
+      // Set protocol based on current page protocol
+      if (window.location.protocol === "https:") {
+        protocolSelect.value = "wss";
+      }
+
+      // Display browser info
+      function showBrowserInfo() {
+        browserInfoCard.style.display = "block";
+
+        const browserData = {
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          vendor: navigator.vendor,
+          language: navigator.language,
+          cookiesEnabled: navigator.cookieEnabled,
+          isSecureContext: window.isSecureContext,
+          onLine: navigator.onLine,
+          currentProtocol: window.location.protocol,
+        };
+
+        let html = '<table class="result-table">';
+        for (const [key, value] of Object.entries(browserData)) {
+          html += `
+                    <tr>
+                        <th>${key}</th>
+                        <td>${value}</td>
+                    </tr>
+                `;
+        }
+        html += "</table>";
+
+        // Add mixed content warning if needed
+        if (
+          window.location.protocol === "https:" &&
+          protocolSelect.value === "ws"
+        ) {
+          html += `
+                    <div class="status warning" style="margin-top: 10px;">
+                        <strong>Warning:</strong> You're viewing this page over HTTPS but trying to connect to WebSocket over insecure ws://. 
+                        Browsers block this mixed content. Use wss:// instead for secure sites.
+                    </div>
+                `;
+        }
+
+        browserInfo.innerHTML = html;
+      }
+
+      // Run the diagnostics
+      async function runDiagnostics() {
+        runDiagnosticsBtn.disabled = true;
+        runDiagnosticsBtn.textContent = "Running Diagnostics...";
+
+        showBrowserInfo();
+
+        const host = hostInput.value;
+        const wsPort = wsPortInput.value;
+        const apiPort = apiPortInput.value;
+        const path = pathInput.value;
+        const protocol = protocolSelect.value;
+
+        const wsUrl = `${protocol}://${host}:${wsPort}${path}`;
+        const apiUrl = `http://${host}:${apiPort}/chat`;
+
+        // Initialize results
+        const results = {
+          browser: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            vendor: navigator.vendor,
+            isSecureContext: window.isSecureContext,
+            onLine: navigator.onLine,
+          },
+          connection: {
+            protocol: window.location.protocol,
+            hostname: host,
+            wsPort: wsPort,
+            apiPort: apiPort,
+            wsPath: path,
+            wsProtocol: protocol,
+            wsUrl: wsUrl,
+            apiUrl: apiUrl,
+            httpsToWsBlocking:
+              window.location.protocol === "https:" && protocol === "ws",
+          },
+          tests: {
+            serverStatusCheck: null,
+            serverDiagnostics: null,
+            wsConstructorTest: null,
+            corsTest: null,
+            webSocketHeaders: null,
+            connectionAttempt: null,
+          },
+        };
+
+        // Test 1: API Server Status
+        try {
+          const response = await fetch(`${apiUrl}/status/`, { timeout: 5000 });
+          const data = await response.json();
+          results.tests.serverStatusCheck = {
+            success: response.ok,
+            status: response.status,
+            data: data,
+          };
+        } catch (error) {
+          results.tests.serverStatusCheck = {
+            success: false,
+            error: error.message,
+            type: error.name,
+          };
+        }
+
+        // Test 1B: Server-side Diagnostics
+        try {
+          const response = await fetch(`${apiUrl}/diagnostics/`, {
+            timeout: 10000,
+          });
+          const data = await response.json();
+          results.tests.serverDiagnostics = {
+            success: response.ok,
+            status: response.status,
+            data: data,
+          };
+        } catch (error) {
+          results.tests.serverDiagnostics = {
+            success: false,
+            error: error.message,
+            type: error.name,
+          };
+        }
+
+        // Test 2: WebSocket Constructor Test
+        try {
+          const testWs = new WebSocket(wsUrl);
+          results.tests.wsConstructorTest = {
+            success: true,
+            message: "WebSocket constructor did not throw an error",
+          };
+
+          // Close it after a short delay
+          setTimeout(() => {
+            if (testWs && testWs.readyState !== WebSocket.CLOSED) {
+              testWs.close();
+            }
+          }, 100);
+        } catch (error) {
+          results.tests.wsConstructorTest = {
+            success: false,
+            error: error.message,
+            type: error.name,
+          };
+        }
+
+        // Test 3: CORS Test
+        try {
+          const corsUrl = `http://${host}:${wsPort}`;
+          const response = await fetch(corsUrl, {
+            method: "OPTIONS",
+          });
+          results.tests.corsTest = {
+            success: response.ok,
+            status: response.status,
+          };
+        } catch (error) {
+          results.tests.corsTest = {
+            success: false,
+            error: error.message,
+            type: error.name,
+          };
+        }
+
+        // Test 4: WebSocket Handshake Debug
+        try {
+          // Use HTTP upgrade headers to debug WebSocket handshake
+          const headers = {
+            Connection: "Upgrade",
+            Upgrade: "websocket",
+            "Sec-WebSocket-Key": "dGhlIHNhbXBsZSBub25jZQ==",
+            "Sec-WebSocket-Version": "13",
+          };
+
+          const handshakeUrl = `http://${host}:${wsPort}${path}`;
+
+          const wsDebugResponse = await fetch(handshakeUrl, {
+            method: "GET",
+            headers: headers,
+          }).catch((err) => {
+            return {
+              type: "error",
+              status: "network-error",
+              statusText: err.message,
+            };
+          });
+
+          if (wsDebugResponse.type === "error") {
+            results.tests.webSocketHeaders = {
+              success: false,
+              error: wsDebugResponse.statusText,
+            };
+          } else {
+            results.tests.webSocketHeaders = {
+              success: wsDebugResponse.status === 101, // 101 Switching Protocols
+              status: wsDebugResponse.status,
+              statusText: wsDebugResponse.statusText,
+              headers: Object.fromEntries([...wsDebugResponse.headers]),
+            };
+          }
+        } catch (error) {
+          results.tests.webSocketHeaders = {
+            success: false,
+            error: error.message,
+          };
+        }
+
+        // Test 5: Actual Connection Attempt
+        try {
+          const wsTest = new WebSocket(wsUrl);
+
+          const connectionResult = await new Promise((resolve) => {
+            // Set timeout
+            const timeout = setTimeout(() => {
+              resolve({
+                success: false,
+                error: "Connection attempt timed out after 5 seconds",
+                readyState: wsTest.readyState,
+              });
+              wsTest.close();
+            }, 5000);
+
+            wsTest.onopen = () => {
+              clearTimeout(timeout);
+              resolve({
+                success: true,
+                readyState: WebSocket.OPEN,
+                message: "Connection successful",
+              });
+              wsTest.close();
+            };
+
+            wsTest.onerror = (err) => {
+              clearTimeout(timeout);
+              resolve({
+                success: false,
+                error: "Connection error",
+                errorEvent: err.type,
+                readyState: wsTest.readyState,
+              });
+              wsTest.close();
+            };
+          });
+
+          results.tests.connectionAttempt = connectionResult;
+        } catch (error) {
+          results.tests.connectionAttempt = {
+            success: false,
+            error: error.message,
+            type: error.name,
+          };
+        }
+
+        // Generate a diagnosis
+        const diagnosis = generateDiagnosis(results);
+        results.diagnosis = diagnosis;
+
+        // Display results
+        displayResults(results);
+
+        runDiagnosticsBtn.disabled = false;
+        runDiagnosticsBtn.textContent = "Run Diagnostics";
+      }
+
+      // Generate network trace visualization data
+      function generateNetworkTraceData() {
+        const trace = [];
+
+        // Step 1: Browser Check
+        trace.push({
+          id: "browser-check",
+          name: "Browser WebSocket Support",
+          status: typeof WebSocket !== "undefined" ? "success" : "error",
+          details:
+            typeof WebSocket !== "undefined"
+              ? "Browser supports WebSocket API"
+              : "Browser does not support WebSocket API",
+          duration: 0,
+          data: results.browser,
+        });
+
+        // Step 2: Server API Status
+        if (results.tests.serverStatusCheck) {
+          trace.push({
+            id: "server-status",
+            name: "Django API Server Status",
+            status: results.tests.serverStatusCheck.success
+              ? "success"
+              : "error",
+            details: results.tests.serverStatusCheck.success
+              ? "Django API server is online"
+              : "Django API server is offline or unreachable",
+            error: !results.tests.serverStatusCheck.success
+              ? results.tests.serverStatusCheck.error
+              : null,
+            duration: 0,
+            data: results.tests.serverStatusCheck,
+          });
+        }
+
+        // Add more steps based on test results
+        // Step 3: WebSocket Server Status (from diagnostics)
+        if (results.tests.serverDiagnostics?.success) {
+          const asgiStatus =
+            results.tests.serverDiagnostics.data.server_diagnostics
+              .asgi_port_status;
+          trace.push({
+            id: "websocket-server",
+            name: "WebSocket Server Status",
+            status: asgiStatus.includes("open") ? "success" : "error",
+            details: asgiStatus.includes("open")
+              ? "WebSocket (ASGI) server is running"
+              : "WebSocket server is not running or port is closed",
+            duration: 0,
+            data: {
+              asgi_port:
+                results.tests.serverDiagnostics.data.server_diagnostics
+                  .asgi_port,
+              asgi_port_status: asgiStatus,
+            },
+          });
+        }
+
+        // Step 4: CORS Check
+        if (results.tests.corsTest) {
+          trace.push({
+            id: "cors-check",
+            name: "CORS Configuration",
+            status: results.tests.corsTest.success ? "success" : "error",
+            details: results.tests.corsTest.success
+              ? "CORS is properly configured"
+              : "CORS issues detected",
+            error: !results.tests.corsTest.success
+              ? results.tests.corsTest.error
+              : null,
+            duration: 0,
+            data: results.tests.corsTest,
+          });
+        }
+
+        // Step 5: WebSocket Constructor Test
+        if (results.tests.wsConstructorTest) {
+          trace.push({
+            id: "ws-constructor",
+            name: "WebSocket Constructor",
+            status: results.tests.wsConstructorTest.success
+              ? "success"
+              : "error",
+            details: results.tests.wsConstructorTest.success
+              ? "WebSocket constructor initialized successfully"
+              : "Error creating WebSocket object",
+            error: !results.tests.wsConstructorTest.success
+              ? results.tests.wsConstructorTest.error
+              : null,
+            duration: 0,
+            data: results.tests.wsConstructorTest,
+          });
+        }
+
+        // Step 6: WebSocket Handshake
+        if (results.tests.webSocketHeaders) {
+          trace.push({
+            id: "ws-handshake",
+            name: "WebSocket Handshake",
+            status: results.tests.webSocketHeaders.success
+              ? "success"
+              : "error",
+            details: results.tests.webSocketHeaders.success
+              ? "WebSocket handshake successful"
+              : `Handshake failed with status ${
+                  results.tests.webSocketHeaders.status || "unknown"
+                }`,
+            error: !results.tests.webSocketHeaders.success
+              ? results.tests.webSocketHeaders.error
+              : null,
+            duration: 0,
+            data: results.tests.webSocketHeaders,
+          });
+        }
+
+        // Step 7: WebSocket Connection
+        if (results.tests.connectionAttempt) {
+          trace.push({
+            id: "ws-connection",
+            name: "WebSocket Connection",
+            status: results.tests.connectionAttempt.success
+              ? "success"
+              : "error",
+            details: results.tests.connectionAttempt.success
+              ? "WebSocket connection established successfully"
+              : "WebSocket connection failed",
+            error: !results.tests.connectionAttempt.success
+              ? results.tests.connectionAttempt.error
+              : null,
+            duration: 0,
+            data: results.tests.connectionAttempt,
+          });
+        }
+
+        return trace;
+      }
+
+      // Generate a diagnosis based on the test results
+      function generateDiagnosis(results) {
+        const diagnosis = {
+          isBrowserBlocking: false,
+          isServerError: false,
+          specificIssue: null,
+          recommendation: null,
+        };
+
+        if (results.connection.httpsToWsBlocking) {
+          diagnosis.isBrowserBlocking = true;
+          diagnosis.specificIssue = "Mixed content blocking";
+          diagnosis.recommendation =
+            "Your page is loaded over HTTPS but trying to connect to WebSocket over insecure ws://. Use wss:// instead or switch to HTTP for testing.";
+        } else if (!results.tests.serverStatusCheck?.success) {
+          diagnosis.isServerError = true;
+          diagnosis.specificIssue = "Django API server unreachable";
+          diagnosis.recommendation =
+            "Ensure Django development server is running on port " +
+            results.connection.apiPort +
+            " and accessible.";
+        } else if (results.tests.serverDiagnostics?.success) {
+          // If we have server diagnostics, check ASGI configuration
+          const serverData =
+            results.tests.serverDiagnostics.data.server_diagnostics;
+
+          if (serverData.asgi_port_status !== "open") {
+            diagnosis.isServerError = true;
+            diagnosis.specificIssue = "ASGI server port not open";
+            diagnosis.recommendation = `The ASGI server port (${serverData.asgi_port}) is not open. Make sure Daphne/Uvicorn is running on that port.`;
+          } else if (!serverData.channel_layer_available) {
+            diagnosis.isServerError = true;
+            diagnosis.specificIssue = "Channel layer not configured";
+            diagnosis.recommendation =
+              "The Django Channels layer is not properly configured. Check your settings.py file.";
+          } else if (
+            serverData.channel_layer_test &&
+            serverData.channel_layer_test.includes("Error")
+          ) {
+            diagnosis.isServerError = true;
+            diagnosis.specificIssue = "Channel layer not working";
+            diagnosis.recommendation =
+              "The Django Channels layer is configured but not working properly. Check Redis/InMemory channel layer configuration.";
+          }
+        }
+
+        // Check WebSocket handshake specifically
+        if (!diagnosis.specificIssue && results.tests.webSocketHeaders) {
+          if (!results.tests.webSocketHeaders.success) {
+            diagnosis.isServerError = true;
+
+            // Check for specific HTTP status codes
+            if (results.tests.webSocketHeaders.status === 404) {
+              diagnosis.specificIssue = "WebSocket endpoint not found";
+              diagnosis.recommendation =
+                "The WebSocket endpoint wasn't found. Check your routing.py configuration and URL path.";
+            } else if (results.tests.webSocketHeaders.status === 403) {
+              diagnosis.specificIssue = "WebSocket access forbidden";
+              diagnosis.recommendation =
+                "Server returned 403 Forbidden. Check CORS settings and authentication requirements.";
+            } else if (
+              results.tests.webSocketHeaders.error &&
+              results.tests.webSocketHeaders.error.includes("Failed to fetch")
+            ) {
+              diagnosis.specificIssue =
+                "Network error during WebSocket handshake";
+              diagnosis.recommendation =
+                "Browser couldn't establish a connection to the server. Check firewall settings and network connectivity.";
+            } else {
+              diagnosis.specificIssue = "WebSocket handshake failed";
+              diagnosis.recommendation = `The server returned ${
+                results.tests.webSocketHeaders.status
+              } ${
+                results.tests.webSocketHeaders.statusText || ""
+              } instead of 101 Switching Protocols.`;
+            }
+          }
+        }
+
+        // If we still don't have a diagnosis, check the actual connection attempt
+        if (!diagnosis.specificIssue) {
+          if (!results.tests.wsConstructorTest?.success) {
+            diagnosis.isBrowserBlocking = true;
+            diagnosis.specificIssue = "WebSocket constructor blocked";
+            diagnosis.recommendation =
+              "Browser security is preventing WebSocket creation. Check Content Security Policy settings.";
+          } else if (!results.tests.connectionAttempt?.success) {
+            if (
+              results.tests.connectionAttempt?.readyState ===
+              WebSocket.CONNECTING
+            ) {
+              diagnosis.isServerError = true;
+              diagnosis.specificIssue = "Connection timeout";
+              diagnosis.recommendation =
+                "WebSocket server is not responding. Ensure Daphne/ASGI server is running on port " +
+                results.connection.wsPort +
+                ".";
+            } else {
+              diagnosis.isServerError = true;
+              diagnosis.specificIssue = "Connection error";
+              diagnosis.recommendation =
+                "WebSocket connection failed. Check server logs for errors.";
+            }
+          } else {
+            diagnosis.specificIssue = "No issues detected";
+            diagnosis.recommendation =
+              "Connection diagnostics passed. If you're still having issues, check server-side logs.";
+          }
+        }
+
+        return diagnosis;
+      }
+
+      // Display test results
+      function displayResults(results) {
+        // Show cards
+        diagnosticResultsCard.style.display = "block";
+        testResultsCard.style.display = "block";
+
+        // Display diagnosis
+        const statusClass =
+          results.diagnosis.specificIssue === "No issues detected"
+            ? "success"
+            : "error";
+        diagnosticSummary.className = `status ${statusClass}`;
+        diagnosticSummary.innerHTML = `
+                <strong>${results.diagnosis.specificIssue}</strong>
+                <p>${results.diagnosis.recommendation}</p>
+                <p><strong>Issue type:</strong> ${
+                  results.diagnosis.isBrowserBlocking
+                    ? "Browser blocking the connection"
+                    : results.diagnosis.isServerError
+                    ? "Server-side error"
+                    : "No issues detected"
+                }</p>
+            `;
+
+        // Display test results
+        let testsHtml = '<div style="margin-bottom: 15px;">';
+
+        // API Server Check
+        testsHtml += createTestResult(
+          "API Server",
+          results.tests.serverStatusCheck?.success ? "success" : "error",
+          results.tests.serverStatusCheck?.success
+            ? "API server is running and accessible"
+            : "Could not connect to API server"
+        );
+
+        // Server Diagnostics
+        testsHtml += createTestResult(
+          "Server Diagnostics",
+          results.tests.serverDiagnostics?.success ? "success" : "error",
+          results.tests.serverDiagnostics?.success
+            ? "Server diagnostic endpoint is working"
+            : "Could not access server diagnostics"
+        );
+
+        // WebSocket Constructor
+        testsHtml += createTestResult(
+          "WebSocket Constructor",
+          results.tests.wsConstructorTest?.success ? "success" : "error",
+          results.tests.wsConstructorTest?.success
+            ? "Browser allowed WebSocket creation"
+            : "Browser blocked WebSocket creation"
+        );
+
+        // CORS Test
+        testsHtml += createTestResult(
+          "CORS Headers",
+          results.tests.corsTest?.success ? "success" : "warning",
+          results.tests.corsTest?.success
+            ? "CORS seems properly configured"
+            : "CORS might not be properly configured"
+        );
+
+        // WebSocket Handshake
+        testsHtml += createTestResult(
+          "WebSocket Handshake",
+          results.tests.webSocketHeaders?.success ? "success" : "error",
+          results.tests.webSocketHeaders?.success
+            ? "WebSocket handshake successful"
+            : "WebSocket handshake failed"
+        );
+
+        // Connection Test
+        testsHtml += createTestResult(
+          "Connection Test",
+          results.tests.connectionAttempt?.success ? "success" : "error",
+          results.tests.connectionAttempt?.success
+            ? "WebSocket connection successful"
+            : "WebSocket connection failed"
+        );
+
+        testsHtml += "</div>";
+
+        // Display recent connection attempts if available
+        if (
+          results.tests.serverDiagnostics?.success &&
+          results.tests.serverDiagnostics?.data?.server_diagnostics
+            ?.recent_connection_attempts?.length > 0
+        ) {
+          const attempts =
+            results.tests.serverDiagnostics.data.server_diagnostics
+              .recent_connection_attempts;
+
+          testsHtml += `
+                    <h3>Recent Connection Attempts</h3>
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        <table class="result-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Client IP</th>
+                                    <th>Error</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+          attempts.forEach((attempt) => {
+            testsHtml += `
+                        <tr class="${attempt.successful ? "success" : "error"}">
+                            <td>${new Date(
+                              attempt.timestamp
+                            ).toLocaleTimeString()}</td>
+                            <td>${
+                              attempt.successful ? "✓ Success" : "✗ Failed"
+                            }</td>
+                            <td>${attempt.client_ip}</td>
+                            <td>${attempt.error_message || "-"}</td>
+                        </tr>
+                    `;
+          });
+
+          testsHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+        }
+
+        testResults.innerHTML = testsHtml;
+
+        // Display raw results
+        rawResults.textContent = JSON.stringify(results, null, 2);
+
+        // Display the results
+        resultsCard.classList.remove("hidden");
+
+        // Generate and display network trace visualization
+        const networkTraceData = generateNetworkTraceData();
+        networkTraceVisualizer = new WebSocketNetworkTraceVisualizer(
+          networkTraceData
+        );
+        const networkTraceElement = document.getElementById(
+          "networkTraceVisualization"
+        );
+        networkTraceElement.innerHTML = networkTraceVisualizer.render();
+        networkTraceElement.classList.remove("hidden");
+
+        // Generate and display security analysis
+        securityAnalyzer = new WebSocketSecurityAnalyzer(results);
+        const securityAnalysisElement =
+          document.getElementById("securityAnalysis");
+        securityAnalysisElement.innerHTML = securityAnalyzer.render();
+        securityAnalysisElement.classList.remove("hidden");
+      }
+
+      // Helper to create a test result element
+      function createTestResult(name, status, message) {
+        return `
+                <div class="test-result">
+                    <div class="indicator ${status}"></div>
+                    <div>
+                        <strong>${name}:</strong> ${message}
+                    </div>
+                </div>
+            `;
+      }
+
+      // Event listener
+      runDiagnosticsBtn.addEventListener("click", runDiagnostics);
+
+      // Show browser info on page load
+      showBrowserInfo();
+    </script>
+  </body>
+</html>
